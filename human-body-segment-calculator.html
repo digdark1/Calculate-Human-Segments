@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>인체 분절 길이 및 무게 계산기</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        label, input, button {
+            display: block;
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .image-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .image-container img {
+            width: 48%;
+            max-width: 380px;
+        }
+    </style>
+</head>
+<body>
+    <h1>인체 분절 길이 및 무게 계산기</h1>
+    <div class="image-container">
+        <img src="/api/placeholder/380/300" alt="인체 분절 도표 1">
+        <img src="/api/placeholder/380/300" alt="인체 분절 도표 2">
+    </div>
+    <label for="age">나이:</label>
+    <input type="number" id="age" min="20" max="60" value="20" required>
+    <button onclick="calculateSegments()">계산하기</button>
+    <div id="result"></div>
+
+    <script>
+        const lengthData = [
+            {age: 20, upperArm: 337.5, forearm: 282, thigh: 429.3625, tibia: 388.5, foot: 256.5, shoulder: 401, pelvisHeight: 78.8625, pelvisWidth: 334.7275, trunk: 504.72, hand: 177.5},
+            {age: 30, upperArm: 337, forearm: 283.5, thigh: 430.71, tibia: 390, foot: 259, shoulder: 401.5, pelvisHeight: 79.11, pelvisWidth: 335.778, trunk: 506.304, hand: 178.5},
+            {age: 40, upperArm: 332, forearm: 275, thigh: 425.6875, tibia: 387, foot: 256.5, shoulder: 399.5, pelvisHeight: 78.1875, pelvisWidth: 331.8625, trunk: 500.4, hand: 181},
+            {age: 50, upperArm: 324.5, forearm: 269.5, thigh: 417.97, tibia: 380.5, foot: 253.5, shoulder: 394.5, pelvisHeight: 76.77, pelvisWidth: 325.846, trunk: 491.328, hand: 181},
+            {age: 60, upperArm: 323.5, forearm: 266, thigh: 412.335, tibia: 376.5, foot: 253, shoulder: 388, pelvisHeight: 75.735, pelvisWidth: 321.453, trunk: 484.704, hand: 181}
+        ];
+
+        const weightData = [
+            {age: 20, foot: 1.793197915, forearm: 0.532255767, hand: 0.412477382, head: 6.1, thigh: 8.846280882, tibia: 3.56853172, trunk: 30.67607288, upperArm: 1.942377927},
+            {age: 30, foot: 2.165413184, forearm: 0.544254291, hand: 0.44908607, head: 6.1, thigh: 9.490757076, tibia: 3.440918735, trunk: 32.91091021, upperArm: 2.135359355},
+            {age: 40, foot: 1.714714773, forearm: 0.523835735, hand: 0.470569199, head: 6.1, thigh: 9.394649644, tibia: 3.238836369, trunk: 32.57764037, upperArm: 2.047488121},
+            {age: 50, foot: 1.537920297, forearm: 0.498321958, hand: 0.435302126, head: 6.1, thigh: 8.953374552, tibia: 3.17202425, trunk: 31.04743948, upperArm: 1.852732735},
+            {age: 60, foot: 1.565112151, forearm: 0.489041987, hand: 0.418180346, head: 6.1, thigh: 8.718572034, tibia: 2.976835995, trunk: 30.23321944, upperArm: 1.624454699}
+        ];
+
+        function interpolate(x, x1, y1, x2, y2) {
+            return y1 + (x - x1) * (y2 - y1) / (x2 - x1);
+        }
+
+        function calculateSegments() {
+            const age = parseInt(document.getElementById('age').value);
+
+            if (!age || age < 20 || age > 60) {
+                alert('20세에서 60세 사이의 나이를 입력해주세요.');
+                return;
+            }
+
+            let lowerIndex = 0;
+            let upperIndex = 0;
+
+            for (let i = 0; i < lengthData.length - 1; i++) {
+                if (age >= lengthData[i].age && age <= lengthData[i + 1].age) {
+                    lowerIndex = i;
+                    upperIndex = i + 1;
+                    break;
+                }
+            }
+
+            const lowerAge = lengthData[lowerIndex].age;
+            const upperAge = lengthData[upperIndex].age;
+
+            const lengthSegments = [
+                { name: '윗팔 길이', key: 'upperArm' },
+                { name: '아래팔 길이', key: 'forearm' },
+                { name: '대퇴골 길이', key: 'thigh' },
+                { name: '정강이뼈 길이', key: 'tibia' },
+                { name: '발 길이', key: 'foot' },
+                { name: '어깨 너비', key: 'shoulder' },
+                { name: '골반 높이', key: 'pelvisHeight' },
+                { name: '골반 너비', key: 'pelvisWidth' },
+                { name: '몸통 길이', key: 'trunk' },
+                { name: '손 길이', key: 'hand' }
+            ];
+
+            const weightSegments = [
+                { name: '발', key: 'foot' },
+                { name: '아래팔', key: 'forearm' },
+                { name: '손', key: 'hand' },
+                { name: '머리', key: 'head' },
+                { name: '대퇴', key: 'thigh' },
+                { name: '정강이', key: 'tibia' },
+                { name: '몸통', key: 'trunk' },
+                { name: '윗팔', key: 'upperArm' }
+            ];
+
+            let lengthHTML = '<h2>분절 길이</h2><table><tr><th>분절</th><th>길이 (mm)</th></tr>';
+            lengthSegments.forEach(segment => {
+                const lowerValue = lengthData[lowerIndex][segment.key];
+                const upperValue = lengthData[upperIndex][segment.key];
+                const interpolatedValue = interpolate(age, lowerAge, lowerValue, upperAge, upperValue);
+                lengthHTML += `<tr><td>${segment.name}</td><td>${interpolatedValue.toFixed(1)}</td></tr>`;
+            });
+            lengthHTML += '</table>';
+
+            let weightHTML = '<h2>분절 무게</h2><table><tr><th>분절</th><th>무게 (kg)</th></tr>';
+            weightSegments.forEach(segment => {
+                const lowerValue = weightData[lowerIndex][segment.key];
+                const upperValue = weightData[upperIndex][segment.key];
+                const interpolatedValue = interpolate(age, lowerAge, lowerValue, upperAge, upperValue);
+                weightHTML += `<tr><td>${segment.name}</td><td>${interpolatedValue.toFixed(3)}</td></tr>`;
+            });
+            weightHTML += '</table>';
+
+            document.getElementById('result').innerHTML = lengthHTML + weightHTML;
+        }
+
+        // 페이지 로드 시 자동으로 계산 실행
+        window.onload = calculateSegments;
+    </script>
+</body>
+</html>
